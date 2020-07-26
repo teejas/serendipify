@@ -38,7 +38,7 @@ import com.android.build.OutputFile
  *   // bundleInPaidRelease: true,
  *   // bundleInBeta: true,
  *
- *   // whether to disable dev mode in custom build variants (by default only disabled in release)
+ *   // whether to disable dev mode in custom build variants (by defaultonly disabled in release)
  *   // for example: to disable dev mode in the staging build type (if configured)
  *   devDisabledInStaging: true,
  *   // The configuration property can be in the following formats
@@ -136,6 +136,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        manifestPlaceholders = [
+                appAuthRedirectScheme: 'com.serendipify'
+        ]
     }
     splits {
         abi {
