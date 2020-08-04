@@ -19,3 +19,12 @@ export const getUserData = async (key) => {
     console.error(error)
   }
 }
+
+export const clearAll = async () => {
+  try {
+    console.log("CLEARING ALL ASYNCSTORAGE")
+    await AsyncStorage.multiRemove(['accessToken', 'refreshToken', 'expirationTime', 'deviceId']);
+  } catch(error) {
+    console.error(error)
+  }
+}

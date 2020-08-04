@@ -8,7 +8,7 @@ import React, {Component} from 'react';
 import {StyleSheet, Text, View, Button, FlatList} from 'react-native';
 
 import loginHandler from '../utils/loginUtils.js';
-import { setUserData, getUserData } from '../utils/storageUtils.js';
+import { setUserData, getUserData, clearAll } from '../utils/storageUtils.js';
 import { getPlaylists } from '../utils/spotifyUtils.js'
 
 import PlaybackView from './playback.js'
@@ -18,19 +18,6 @@ class PlaylistView extends Component {
   _isMounted = false;
 
   state = this.props.parentState; // inherit state from parent
-
-  updateState = async () => {
-    this.state.accessToken = await getUserData('accessToken');
-    this.state.refreshToken = await getUserData('refreshToken');
-    this.state.accessTokenExpirationDate = await getUserData('expirationTime');
-  }
-
-  setPlaybackState = (playlistObj) => {
-    if(this._isMounted) {
-      this.setState({playlistId: playlistObj.id});
-      this.setState({playlistName: playlistObj.name})
-    }
-  }
 
   componentDidMount = async () => {
     this._isMounted = true;
@@ -48,6 +35,19 @@ class PlaylistView extends Component {
     this._isMounted = false;
   }
 
+  updateState = async () => {
+    this.state.accessToken = await getUserData('accessToken');
+    this.state.refreshToken = await getUserData('refreshToken');
+    this.state.accessTokenExpirationDate = await getUserData('expirationTime');
+  }
+
+  setPlaybackState = (playlistObj) => {
+    if(this._isMounted) {
+      this.setState({playlistId: playlistObj.id});
+      this.setState({playlistName: playlistObj.name})
+    }
+  }
+
   render() {
     if(!this.state.playlistId && this.state.playlists) {
       const playlistNames = []
@@ -57,6 +57,7 @@ class PlaylistView extends Component {
       });
       return (
         <View style={styles.container}>
+          <Text style={styles.title}>Select a playlist to start your listening session:</Text>
           <FlatList
           data={playlistNames}
           renderItem={

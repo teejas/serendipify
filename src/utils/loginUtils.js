@@ -21,7 +21,9 @@ class loginUtils {
         'user-library-read',
         'user-library-modify',
         'user-top-read',
-        'streaming'
+        'streaming',
+        'user-read-playback-state',
+        'user-modify-playback-state',
       ],
       discovery: {
         authorizationEndpoint: 'https://accounts.spotify.com/authorize',
@@ -89,7 +91,6 @@ class loginUtils {
           expires_in: expiresIn,
         } = responseJson;
 
-        console.log(responseJson)
         const expirationTime = new Date().getTime() + expiresIn * 1000;
 
         await setUserData('accessToken', accessToken);
@@ -107,6 +108,7 @@ class loginUtils {
 
   loadTokens = async () => {
     try {
+      console.log("Loading tokens...")
       const accessToken = await getUserData('accessToken');
       const refreshToken = await getUserData('refreshToken');
       const expireTime = await getUserData('expirationTime');
@@ -128,7 +130,7 @@ class loginUtils {
   refreshTokens = async () => {
     try {
       // await this.getSpotifyCredentials()
-      console.log("Refreshing tokens")
+      console.log("Refreshing tokens...")
       const creds = encode(`${spotifyCredentials.clientId}:${spotifyCredentials.clientSecret}`);
       const refreshToken = await getUserData('refreshToken');
       const response = await fetch('https://accounts.spotify.com/api/token', {
@@ -140,7 +142,6 @@ class loginUtils {
         body: `grant_type=refresh_token&refresh_token=${refreshToken}`,
       });
       const responseJson = await response.json();
-      console.log(responseJson)
       if (responseJson.error) {
         await this.getTokens();
       } else {
@@ -169,6 +170,7 @@ class loginUtils {
   // }
 
   checkTokenExpiration = async () => {
+    console.log("Checking token expiration time...")
     const expirationTime = await getUserData('expirationTime');
     var tokenExpirationTime = null;
     if(expirationTime) {

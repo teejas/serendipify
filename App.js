@@ -20,6 +20,30 @@ class App extends Component {
     refreshToken: ''
   };
 
+  componentDidMount = async () => {
+    try {
+      this._isMounted = true;
+      const storedTokens = await loginHandler.loadTokens();
+      if(!storedTokens) {
+        const url = await Linking.getInitialURL();
+        if(url) {
+          await this.handleOpenURL(url)
+        }
+        Linking.addEventListener('url', async (url) => {await this.handleOpenURL(url.url)});
+      } else {
+        console.log("Tokens loaded from async storage")
+        await this.loggedIn(storedTokens);
+      }
+    } catch(error) {
+      console.log("ERROR IN App.componentDidMount()");
+      console.error(error);
+    }
+  }
+
+  componentWillUnmount = () => {
+    this._isMounted = false;
+  }
+
   updateState = async () => {
     this.state.accessToken = await getUserData('accessToken');
     this.state.refreshToken = await getUserData('refreshToken');
@@ -34,10 +58,6 @@ class App extends Component {
         this.setState({hasLoggedInOnce: true});
       }
 
-      console.log("Access token: " + this.state.accessToken);
-      console.log("Refresh token: " + this.state.refreshToken);
-      console.log("Expiration time: " + this.state.accessTokenExpirationDate);
-
     } catch(error) {
       console.log("ERROR IN App.loggedIn()");
       console.error(error);
@@ -45,48 +65,28 @@ class App extends Component {
   }
 
   handleOpenURL = async (url) => {
-    console.log(url);
-    if(url.includes("code")) {
-      const parseObj = Linking.parse(url)
-      const code = parseObj.queryParams.code;
-      const res = await loginHandler.getTokens(code);
-      if(res) {
-        const tokens = await loginHandler.loadTokens();
-        await this.loggedIn(tokens);
+    try {
+      console.log(url);
+      if(url.includes("code")) {
+        const parseObj = Linking.parse(url)
+        const code = parseObj.queryParams.code;
+        const res = await loginHandler.getTokens(code);
+        if(res) {
+          const tokens = await loginHandler.loadTokens();
+          await this.loggedIn(tokens);
+        } else {
+          if(this._isMounted) {
+            this.setState({hasLoggedInOnce: false});
+          }
+        }
       } else {
         if(this._isMounted) {
           this.setState({hasLoggedInOnce: false});
         }
       }
-    } else {
-      if(this._isMounted) {
-        this.setState({hasLoggedInOnce: false});
-      }
-    }
-  }
-
-  componentDidMount = async () => {
-    try {
-      this._isMounted = true;
-      const storedTokens = await loginHandler.loadTokens();
-      if(!storedTokens) {
-        const url = await Linking.getInitialURL();
-        if(url) {
-          await this.handleOpenURL(url)
-        }
-        Linking.addEventListener('url', this.handleOpenURL);
-      } else {
-        console.log("Tokens loaded from async storage")
-        await this.loggedIn(storedTokens);
-      }
     } catch(error) {
-      console.log("ERROR IN App.componentDidMount()");
-      console.error(error);
+      console.error(error)
     }
-  }
-
-  componentWillUnmount = () => {
-    this._isMounted = false;
   }
 
   render() {

@@ -7,7 +7,7 @@ I love biking, and listening to music while I'm doing something active adds to t
 
 ## The Solution
 
-I came up with the idea of Serendipify to leverage the Spotify web API and context based recommendation systems so that I can still discover and listen to new music while I'm biking or running. It has automatic playback so that you don't have to worry about skipping songs physically. Recommended songs play in 30 second snippets, and if you don't like it or it isn't fitting the vibe just wait 30 seconds for the next song to come on. But if you like a song just give a single tap to either your headphones or phone screen and the song will be added to a playlist created specifically for the current listening session and the whole song will play.
+I came up with the idea of Serendipify to leverage the Spotify web API and context based recommendation systems so that I can still discover and listen to new music while I'm biking or running. It has automatic playback so that you don't have to worry about skipping songs physically. Recommended songs play in 30 second snippets, and if you don't like it or it isn't fitting the vibe just wait 30 seconds for the next song to come on. But if you like a song just give a single tap to either your headphones or phone screen and the song will be played in its entirety. After the listening session, any liked songs will be added to a new playlist. The user can opt to save the playlist or delete it before exiting.
 
 ## Development
 
