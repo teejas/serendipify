@@ -8,9 +8,14 @@ import * as Linking from 'expo-linking';
 import React, {Component} from 'react';
 import {StyleSheet, Text, View, Button, FlatList, Image} from 'react-native';
 
+import { useRoute, useNavigation } from '@react-navigation/native';
 import loginHandler from '../utils/loginUtils.js';
 import { setUserData, getUserData } from '../utils/storageUtils.js';
-import { getPlaylists, getRecommendedSongs, getPlayer, loadPlayer, addSong, clearQueue } from '../utils/spotifyUtils.js'
+import {
+  getPlaylists, getRecsFromPlaylist, getRecs,
+  getPlayer, loadPlayer, addSong, clearQueue,
+  skipSong, addToPlaylist,
+} from '../utils/spotifyUtils.js'
 
 import FinalView from './final.js'
 
@@ -19,27 +24,6 @@ class PlaybackView extends Component {
   _isMounted = false;
 
   state = this.props.parentState; // inherit state from PlaylistView (parent)
-
-  componentDidMount = async () => {
-    this._isMounted = true;
-    await loginHandler.checkTokenExpiration(this.state);
-    await this.updateState();
-    await clearQueue(this.state.accessToken);
-    if(!this.state.playlist_tracks) {
-      const playlist_tracks = await getRecommendedSongs(this.state.accessToken, this.state.playlistId);
-      if(this._isMounted) {
-        this.setState({playlist_tracks: playlist_tracks})
-      }
-    }
-    if(this.state.playlist_tracks) {
-      await this.skipStateHelper(this.state.playlist_tracks);
-      await this.skipState(this.state.playlist_tracks);
-    }
-  }
-
-  componentWillUnmount = () => {
-    this._isMounted = false;
-  }
 
   updateState = async () => {
     this.state.accessToken = await getUserData('accessToken');
@@ -56,35 +40,63 @@ class PlaybackView extends Component {
     }
   }
 
-  skipStateHelper = async (playlist_tracks) => {
+  skipStateHelper = async () => {
     if(this.state.skip) {
-      if(playlist_tracks) {
-        var player_obj = await loadPlayer(this.state.accessToken, playlist_tracks);
+      if(this.state.playlist_tracks) {
+        var player_obj = await loadPlayer(this.state.accessToken, this.state.playlist_tracks);
         if(this._isMounted) {
           this.setState({player_obj: player_obj});
-          this.setState({playlist_tracks: playlist_tracks});
         }
         console.log('song skipped: ' + JSON.stringify(this.state.skip));
       } else {
         console.log("OUT OF SONGS TO PLAY!");
-        playlist_tracks = await getRecommendedSongs(this.state.accessToken, this.state.playlistId)
+        this.state.playlist_tracks = await getRecsFromPlaylist(this.state.accessToken, this.state.playlist_id)
       }
     }
   }
 
+  skipState = async () => {
+    this.state.interval_id = setInterval(async () => {
+      await this.skipStateHelper();
+    }, 10000);
+  }
+
+  returnToSkip = async () => {
+    console.log("Returning to skip state");
+    clearInterval(this.state.interval_id);
+    if(this.state.skip) {
+      await this.skipStateHelper();
+    } else {
+      var player_obj = await getPlayer(this.state.accessToken);
+      while(player_obj.uri != this.state.curr_playing_track) {
+        player_obj = await getPlayer(this.state.accessToken);
+      }
+      if(this._isMounted) {
+        this.setState({skip: true});
+        this.setState({player_obj: player_obj})
+      }
+    }
+    await this.skipState();
+  }
+
+  /*
+  FUNCTION: add song and let play out, revert back to "skip" state after song is done
+  TO-DO: need to figure out how to detect once the song is finished playing
+   in order to revert to the "skip" state
+   - maybe an event listener?
+   - or just check the playerObj over an interval
+   - save the song length (from playerObj? or get track data endpoint) and check after setTimeout({},song_length)
+   */
   checkSongChanged = async () => {
     try {
       console.log("checking if song has changed")
       const player_obj = await getPlayer(this.state.accessToken);
       if(player_obj) {
         if(player_obj.uri != this.state.player_obj.uri) {
-          console.log("done with song, going back into skip state")
-          if(this._isMounted) {
-            this.setState({skip: true});
-            this.setState({player_obj: player_obj});
-          }
-          clearInterval(this.state.interval_id);
-          await this.skipState(this.state.playlist_tracks);
+          // if(this._isMounted) {
+          //   this.setState({player_obj: player_obj});
+          // }
+          await this.returnToSkip();
         } else {
           if(this._isMounted) {
             this.setState({player_obj: player_obj});
@@ -96,45 +108,76 @@ class PlaybackView extends Component {
     }
   }
 
-  skipState = async (playlist_tracks) => {
-    this.state.interval_id = setInterval(async () => {
-      await this.skipStateHelper(this.state.playlist_tracks);
-    }, 10000);
-  }
-
-  likeSong = async (playlist_tracks) => {
-    // add song and let play out, revert back to "skip" state after song is done
-    /*
-    TO-DO: need to figure out how to detect once the song is finished playing
-     in order to revert to the "skip" state
-     - maybe an event listener?
-     - or just check the playerObj over an interval
-     - save the song length (from playerObj? or get track data endpoint) and check after setTimeout({},song_length)
-     */
+  likeSong = async () => {
      try {
       console.log("Song " + this.state.player_obj.item.name + " liked!");
+      if(this._isMounted) {
+        this.setState({skip: false});
+      }
+      // add to liked_songs (for new playlist) and if playing from seed playlist, add to that one as well
+      // *check for duplicates before adding to existing playlist*
       this.state.liked_songs.push({
         name: this.state.player_obj.item.name,
         uri: this.state.player_obj.uri
       });
-      var device_id = await getUserData('deviceId')
+      // if(this.state.playlist_id) {
+      //   await addToPlaylist(this.state.accessToken, this.state.playlist_id, [this.state.player_obj.uri])
+      // }
+      // regenerate playlist_tracks using liked song as seed
+      this.state.playlist_tracks = await getRecs(this.state.accessToken, [this.state.player_obj.item.id]);
+
+      var device_id = await getUserData('device_id')
       if(!device_id) {
         device_id = await getDevice(this.state.accessToken)
       }
       clearInterval(this.state.interval_id)
-      const res = await addSong(this.state.accessToken, playlist_tracks, device_id);
+      const res = await addSong(this.state.accessToken, this.state.playlist_tracks, device_id);
+      this.state.playlist_tracks = res.playlist;
+      this.state.curr_playing_track = res.track;
       this.state.interval_id = setInterval(async () => {
         await this.checkSongChanged();
-      }, 30000)
+      }, 10000)
     } catch (error) {
       console.error(error);
     }
+  }
+
+  skipButtonPress = async () => {
+    console.log("Skip button pressed");
+    const device_id = await getUserData('device_id');
+    if(!device_id) {
+      device_id = await getDevice(this.state.accessToken)
+    }
+    if(!this.state.skip) {
+      await skipSong(this.state.accessToken, device_id);
+    }
+    await this.returnToSkip();
   }
 
   endSession = () => {
     console.log("Session ended.");
     clearInterval(this.state.interval_id)
     this.setState({end_session: true})
+  }
+
+  componentDidMount = async () => {
+    this._isMounted = true;
+    await loginHandler.checkTokenExpiration(this.state);
+    await this.updateState();
+    await clearQueue(this.state.accessToken);
+    if(!this.state.playlist_tracks || this.state.playlist_tracks.length == 0) {
+      const playlist_tracks = await getRecsFromPlaylist(this.state.accessToken, this.state.playlist_id);
+      if(this._isMounted) {
+        this.setState({playlist_tracks: playlist_tracks})
+      }
+    }
+    console.log(this.state.playlist_tracks);
+    await this.skipStateHelper();
+    await this.skipState();
+  }
+
+  componentWillUnmount = () => {
+    this._isMounted = false;
   }
 
   render() {
@@ -154,7 +197,11 @@ class PlaybackView extends Component {
             <Button
               style={styles.likebutton}
               title="Like this song"
-              onPress={async () => await this.likeSong(this.state.playlist_tracks)}
+              onPress={async () => await this.likeSong()}
+            />
+            <Button
+              title="Skip song"
+              onPress={async () => await this.skipButtonPress()}
             />
             <Button
               style={styles.endbutton}
@@ -166,8 +213,8 @@ class PlaybackView extends Component {
       } else {
         return(
           <View style={styles.container}>
-            <Text style={styles.header1}>PLAYLIST NAME: {this.state.playlistName}</Text>
-            <Text style={styles.header2}>PLAYLIST ID: {this.state.playlistId}</Text>
+            <Text style={styles.header1}>PLAYLIST NAME: {this.state.playlist_name}</Text>
+            <Text style={styles.header2}>PLAYLIST ID: {this.state.playlist_id}</Text>
             <Text style={styles.title}>PLAYER IS LOADING...</Text>
           </View>
         )
@@ -254,4 +301,10 @@ const styles = StyleSheet.create({
   }
 });
 
+// export default function(props) {
+//   const route = useRoute();
+//   const navigation = useNavigation();
+//
+//   return <PlaybackView {...props} route={route} navigation={navigation} />;
+// }
 export default PlaybackView;

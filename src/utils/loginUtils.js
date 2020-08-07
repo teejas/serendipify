@@ -49,6 +49,7 @@ class loginUtils {
   authRequest = () => {
     try {
       // await this.getSpotifyCredentials();
+      console.log("REDIRECT URI: " + this.spotifyAuthConfig.redirectUri)
       const [ request, response, promptAsync ] = useAuthRequest(
         {
           clientId: this.spotifyAuthConfig.clientId,

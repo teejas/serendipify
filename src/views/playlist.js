@@ -6,6 +6,7 @@ import {StatusBar} from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import React, {Component} from 'react';
 import {StyleSheet, Text, View, Button, FlatList} from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import loginHandler from '../utils/loginUtils.js';
 import { setUserData, getUserData, clearAll } from '../utils/storageUtils.js';
@@ -23,8 +24,8 @@ class PlaylistView extends Component {
     this._isMounted = true;
     await loginHandler.checkTokenExpiration();
     await this.updateState();
-    this.state.playlistId = null;
-    this.state.playlistName = null;
+    this.state.playlist_id = null;
+    this.state.playlist_name = null;
     const playlists = await getPlaylists(this.state.accessToken);
     if(this._isMounted) {
       this.setState({playlists: playlists});
@@ -43,35 +44,37 @@ class PlaylistView extends Component {
 
   setPlaybackState = (playlistObj) => {
     if(this._isMounted) {
-      this.setState({playlistId: playlistObj.id});
-      this.setState({playlistName: playlistObj.name})
+      this.setState({playlist_id: playlistObj.id});
+      this.setState({playlist_name: playlistObj.name})
     }
+    // navigation.navigate('Playback', {parentState: this.state})
   }
 
   render() {
-    if(!this.state.playlistId && this.state.playlists) {
-      const playlistNames = []
+    if(!this.state.playlist_id && this.state.playlists) {
+      // const { navigation } = this.props;
+      const playlist_names = []
       this.state.playlists.map(playlist => {
-        const [playlistName, playlistId] = playlist.split(":");
-        playlistNames.push({name: playlistName, id: playlistId});
+        const [playlist_name, playlist_id] = playlist.split(":");
+        playlist_names.push({name: playlist_name, id: playlist_id});
       });
       return (
         <View style={styles.container}>
           <Text style={styles.title}>Select a playlist to start your listening session:</Text>
           <FlatList
-          data={playlistNames}
+          data={playlist_names}
           renderItem={
             ({item}) =>
               <Button
-              style={styles.title}
-              title={item.name}
-              onPress={() => this.setPlaybackState(item)}
+                style={styles.title}
+                title={item.name}
+                onPress={() => this.setPlaybackState(item)}
               />
           }
           />
         </View>
       );
-    } else if(this.state.playlistId) {
+    } else if(this.state.playlist_id) {
       return <PlaybackView parentState={this.state} />
     } else {
       return (
@@ -107,5 +110,9 @@ const styles = StyleSheet.create({
   }
 });
 
-
+// export default function(props) {
+//   const navigation = useNavigation();
+//
+//   return <PlaylistView {...props} navigation={navigation} />;
+// }
 export default PlaylistView;

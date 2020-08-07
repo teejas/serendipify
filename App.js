@@ -2,12 +2,16 @@ import {StatusBar} from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import React, {Component} from 'react';
 import {StyleSheet, Text, View} from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createAppContainer, createStackNavigator } from '@react-navigation/stack';
 
 import loginHandler from './src/utils/loginUtils.js';
 import { setUserData, getUserData } from './src/utils/storageUtils.js';
 
 import LoginView from './src/views/login.js'
 import PlaylistView from './src/views/playlist.js'
+import PlaybackView from './src/views/playback.js'
+import FinalView from './src/views/final.js'
 
 class App extends Component {
 
@@ -23,6 +27,7 @@ class App extends Component {
   componentDidMount = async () => {
     try {
       this._isMounted = true;
+      console.log("APP MOUNTED")
       const storedTokens = await loginHandler.loadTokens();
       if(!storedTokens) {
         const url = await Linking.getInitialURL();
@@ -96,6 +101,18 @@ class App extends Component {
     }
     else {
       return <PlaylistView parentState={this.state} />
+      //const Stack = createStackNavigator();
+      // return (
+      //   <NavigationContainer>
+      //     <Stack.Navigator>
+      //       <Stack.Screen name="Playlist">
+      //         {() => <PlaylistView parentState={this.state} />}
+      //       </Stack.Screen>
+      //       <Stack.Screen name="Playback" component={PlaybackView} />
+      //       <Stack.Screen name="Final" component={FinalView} />
+      //     </Stack.Navigator>
+      //   </NavigationContainer>
+      // )
     }
   }
 

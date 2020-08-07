@@ -12,9 +12,9 @@ import {StyleSheet, Text, View, Button, FlatList, Image} from 'react-native';
 
 import loginHandler from '../utils/loginUtils.js';
 import { setUserData, getUserData } from '../utils/storageUtils.js';
-import { savePlaylist } from '../utils/spotifyUtils.js';
+import { savePlaylist, addToPlaylist } from '../utils/spotifyUtils.js';
 
-import PlaylistView from './playlist.js';
+// import PlaylistView from './playlist.js';
 
 class FinalView extends Component {
 
@@ -52,12 +52,15 @@ class FinalView extends Component {
                 ({item}) =>
                   <Text style={styles.header2}>{item.name}</Text>
               }
-              keyExtractor={({item, index}) => index.toString()}
+              keyExtractor={(item, index) => index.toString()}
               />
               <Button
                 title="Save playlist"
                 onPress={async () => {
                   await savePlaylist(this.state.accessToken, this.state.liked_songs);
+                  if(this.state.playlist_id) {
+                    await addToPlaylist(this.state.accessToken, this.state.playlist_id, this.state.liked_songs)
+                  }
                 }}
               />
               <Button
@@ -78,7 +81,8 @@ class FinalView extends Component {
       )
     } else {
       return (
-        <PlaylistView parentState={this.state} />
+        //<PlaylistView parentState={this.state} />
+        <Text style={styles.title}>START A NEW SESSION</Text>
       )
     }
   }
