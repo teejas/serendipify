@@ -43,16 +43,15 @@ class PlaylistView extends Component {
   }
 
   setPlaybackState = (playlistObj) => {
-    if(this._isMounted) {
-      this.setState({playlist_id: playlistObj.id});
-      this.setState({playlist_name: playlistObj.name})
-    }
-    // navigation.navigate('Playback', {parentState: this.state})
+    this.state.playlist_id = playlistObj.id;
+    this.state.playlist_name = playlistObj.name;
+    this.props.navigate('Playback', {
+      parentState: this.state
+    })
   }
 
   render() {
-    if(!this.state.playlist_id && this.state.playlists) {
-      // const { navigation } = this.props;
+    if(this.state.playlists) {
       const playlist_names = []
       this.state.playlists.map(playlist => {
         const [playlist_name, playlist_id] = playlist.split(":");
@@ -74,8 +73,6 @@ class PlaylistView extends Component {
           />
         </View>
       );
-    } else if(this.state.playlist_id) {
-      return <PlaybackView parentState={this.state} />
     } else {
       return (
         <View style={styles.container}>
@@ -83,6 +80,7 @@ class PlaylistView extends Component {
         </View>
       )
     }
+    return null;
   }
 
 }

@@ -220,9 +220,11 @@ class PlaybackView extends Component {
         )
       }
     } else {
-      return(
-        <FinalView parentState={this.state} />
-      )
+      // return <FinalView state={this.state} />
+      this.props.navigate('Final', {
+        parentState: this.state,
+      })
+      return null;
     }
   }
 }

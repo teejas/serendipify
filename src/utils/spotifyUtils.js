@@ -267,7 +267,7 @@ export const getPlayer = async (accessToken) => {
     })
     const currplaying_res = await currplaying_response.json();
     if(currplaying_res) {
-      ret = {
+      const ret = {
         'uri': currplaying_res.item.uri,
         'item': currplaying_res.item,
         'is_playing': currplaying_res.is_playing,

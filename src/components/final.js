@@ -5,8 +5,6 @@ Contains:
   - give option to save playlist of liked songs to Spotify
   - give option to return to PlaylistView to start a new session
 */
-import {StatusBar} from 'expo-status-bar';
-import * as Linking from 'expo-linking';
 import React, {Component} from 'react';
 import {StyleSheet, Text, View, Button, FlatList, Image} from 'react-native';
 
@@ -80,10 +78,11 @@ class FinalView extends Component {
         </View>
       )
     } else {
-      return (
-        //<PlaylistView parentState={this.state} />
-        <Text style={styles.title}>START A NEW SESSION</Text>
-      )
+      this.props.navigate('Playlist', {
+        parentState: null
+      });
+      //return <Text style={styles.title}>START A NEW SESSION</Text>
+      return null
     }
   }
 

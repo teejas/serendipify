@@ -1,90 +1,53 @@
-import * as AuthSession from 'expo-auth-session';
-import * as Linking from 'expo-linking';
 import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
 import { encode } from 'base-64';
 import { spotifyCredentials } from '../secrets.js';
-import axios from 'axios';
 
 import { setUserData, getUserData } from './storageUtils.js'
 
 class loginUtils {
 
+  _dev = true;
+
   constructor() {
-    this.spotifyAuthConfig = {
-      clientId: spotifyCredentials.clientId,
-      clientSecret: spotifyCredentials.clientSecret,
-      redirectUri: spotifyCredentials.redirectUri, // use localhost in development
-      scopes: [
-        'playlist-read-private',
-        'playlist-modify-public',
-        'playlist-modify-private',
-        'user-library-read',
-        'user-library-modify',
-        'user-top-read',
-        'streaming',
-        'user-read-playback-state',
-        'user-modify-playback-state',
-      ],
-      discovery: {
-        authorizationEndpoint: 'https://accounts.spotify.com/authorize',
-        tokenEndpoint: 'https://accounts.spotify.com/api/token',
-      },
-    };
+    if(this._dev) {
+      this.endpoint = 'http://localhost:3000/'
+    } else {
+      this.endpoint = 'https://serendipify-backend.herokuapp.com/'
+    }
   }
 
-  // getSpotifyCredentials = async () => {
-  //   try {
-  //     const res = await axios.get('/api/spotify-credentials')
-  //     console.log("SPOTIFY CREDENTIALS FETCHED: " + res.data)
-  //     const spotifyCredentials = res.data;
-  //     this.spotifyAuthConfig.clientId = spotifyCredentials.clientId;
-  //     this.spotifyAuthConfig.clientSecret = spotifyCredentials.clientSecret;
-  //     this.spotifyAuthConfig.redirectUri = spotifyCredentials.redirectUri;
-  //   } catch(error) {
-  //     console.log("ERROR WITH getSpotifyCredentials()");
-  //     console.error(error)
-  //   }
-  // }
-
-  authRequest = () => {
+  authRequest = async () => {
     try {
-      // await this.getSpotifyCredentials();
-      console.log("REDIRECT URI: " + this.spotifyAuthConfig.redirectUri)
-      const [ request, response, promptAsync ] = useAuthRequest(
-        {
-          clientId: this.spotifyAuthConfig.clientId,
-          clientSecret: this.spotifyAuthConfig.clientSecret,
-          redirectUri: this.spotifyAuthConfig.redirectUri,
-          scopes: this.spotifyAuthConfig.scopes,
-          // In order to follow the "Authorization Code Flow" to fetch token after authorizationEndpoint
-          // this must be set to false
-          usePKCE: false,
-        },
-        this.spotifyAuthConfig.discovery
-      );
-      return [ request, response, promptAsync ];
+      const spotify_auth_url_response = await fetch(this.endpoint + 'api/login/auth_request', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      const spotify_auth_url_res = await spotify_auth_url_response.json()
+
+      return spotify_auth_url_res;
+
     } catch (error) {
-      console.error(JSON.stringify(error));
+      console.log("Error with authRequest()");
+      console.error(error);
     }
   }
 
   getTokens = async (code) => {
     try {
-      // await this.getSpotifyCredentials()
       console.log("Getting tokens")
-      const authorizationCode = code;
-      const creds = encode(`${this.spotifyAuthConfig.clientId}:${this.spotifyAuthConfig.clientSecret}`);
-      const response = await fetch('https://accounts.spotify.com/api/token', {
+      const response = await fetch(this.endpoint + 'api/login/get_tokens', {
         method: 'POST',
         headers: {
-          Authorization: `Basic ${creds}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: `grant_type=authorization_code&code=${authorizationCode}&redirect_uri=${
-          this.spotifyAuthConfig.redirectUri
-        }`,
+        body: JSON.stringify({
+          auth_code: code,
+        }),
       });
       const responseJson = await response.json();
+
       if(!responseJson.error) {
         const {
           access_token: accessToken,
@@ -103,6 +66,7 @@ class loginUtils {
         return null;
       }
     } catch (error) {
+      console.log('Error with getTokens()');
       console.error(error);
     }
   }
@@ -130,19 +94,19 @@ class loginUtils {
 
   refreshTokens = async () => {
     try {
-      // await this.getSpotifyCredentials()
       console.log("Refreshing tokens...")
-      const creds = encode(`${spotifyCredentials.clientId}:${spotifyCredentials.clientSecret}`);
       const refreshToken = await getUserData('refreshToken');
-      const response = await fetch('https://accounts.spotify.com/api/token', {
+      const response = await fetch(this.endpoint + 'api/login/refresh_tokens', {
         method: 'POST',
         headers: {
-          Authorization: `Basic ${creds}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+          'Content-Type': 'application/json',
         },
-        body: `grant_type=refresh_token&refresh_token=${refreshToken}`,
+        body: JSON.stringify({
+          refresh_token: refreshToken,
+        }),
       });
       const responseJson = await response.json();
+
       if (responseJson.error) {
         await this.getTokens();
       } else {
@@ -163,12 +127,6 @@ class loginUtils {
       console.error(err)
     }
   }
-
-  // updateState = async (state) => {
-  //   state.accessToken = await getUserData('accessToken');
-  //   state.refreshToken = await getUserData('refreshToken');
-  //   state.accessTokenExpirationDate = await getUserData('expirationTime');
-  // }
 
   checkTokenExpiration = async () => {
     console.log("Checking token expiration time...")
