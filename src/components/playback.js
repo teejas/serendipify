@@ -2,9 +2,6 @@
 //  - Given a "seed" playlist, fetch recommended songs and playback
 //  - View should have a container which serves to display the currently playing song
 //    - Buttons: huge one for "like song" and small one to "skip"
-
-import {StatusBar} from 'expo-status-bar';
-import * as Linking from 'expo-linking';
 import React, {Component} from 'react';
 import {StyleSheet, Text, View, Button, FlatList, Image} from 'react-native';
 
@@ -17,9 +14,7 @@ import {
   skipSong, addToPlaylist,
 } from '../utils/spotifyUtils.js'
 
-import FinalView from './final.js'
-
-class PlaybackView extends Component {
+class PlaybackScreen extends Component {
 
   _isMounted = false;
 
@@ -309,4 +304,4 @@ const styles = StyleSheet.create({
 //
 //   return <PlaybackView {...props} route={route} navigation={navigation} />;
 // }
-export default PlaybackView;
+export default PlaybackScreen;

@@ -1,6 +1,5 @@
 import { makeRedirectUri, useAuthRequest } from 'expo-auth-session';
 import { encode } from 'base-64';
-import { spotifyCredentials } from '../secrets.js';
 
 import { setUserData, getUserData } from './storageUtils.js'
 
@@ -18,6 +17,7 @@ class loginUtils {
 
   authRequest = async () => {
     try {
+      console.log("Getting URL for Spotify OAuth...")
       const spotify_auth_url_response = await fetch(this.endpoint + 'api/login/auth_request', {
         method: 'GET',
         headers: {
@@ -36,7 +36,7 @@ class loginUtils {
 
   getTokens = async (code) => {
     try {
-      console.log("Getting tokens")
+      console.log("Getting tokens...")
       const response = await fetch(this.endpoint + 'api/login/get_tokens', {
         method: 'POST',
         headers: {
@@ -129,7 +129,7 @@ class loginUtils {
   }
 
   checkTokenExpiration = async () => {
-    console.log("Checking token expiration time...")
+    console.log("Checking if tokens expired...")
     const expirationTime = await getUserData('expirationTime');
     var tokenExpirationTime = null;
     if(expirationTime) {

@@ -1,20 +1,14 @@
 // Load user's playlists for them to select as the seed playlist
 //  - list of playlists as Button
 //    - onPress => load Playback view using selected playlist as "seed"
-
-import {StatusBar} from 'expo-status-bar';
-import * as Linking from 'expo-linking';
 import React, {Component} from 'react';
 import {StyleSheet, Text, View, Button, FlatList} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 
 import loginHandler from '../utils/loginUtils.js';
 import { setUserData, getUserData, clearAll } from '../utils/storageUtils.js';
 import { getPlaylists } from '../utils/spotifyUtils.js'
 
-import PlaybackView from './playback.js'
-
-class PlaylistView extends Component {
+class PlaylistScreen extends Component {
 
   _isMounted = false;
 
@@ -85,7 +79,6 @@ class PlaylistView extends Component {
 
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -108,9 +101,4 @@ const styles = StyleSheet.create({
   }
 });
 
-// export default function(props) {
-//   const navigation = useNavigation();
-//
-//   return <PlaylistView {...props} navigation={navigation} />;
-// }
-export default PlaylistView;
+export default PlaylistScreen;

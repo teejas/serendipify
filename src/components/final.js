@@ -12,8 +12,6 @@ import loginHandler from '../utils/loginUtils.js';
 import { setUserData, getUserData } from '../utils/storageUtils.js';
 import { savePlaylist, addToPlaylist } from '../utils/spotifyUtils.js';
 
-// import PlaylistView from './playlist.js';
-
 class FinalView extends Component {
 
   _isMounted = false;
@@ -73,7 +71,11 @@ class FinalView extends Component {
         <View style={styles.container}>
           <Button
             title="Start new session"
-            onPress={() => {this.setState({new_session: true})}}
+            onPress={() => {
+              this.props.navigate('Playlist', {
+                parentState: null
+              });
+            }}
           />
         </View>
       )
@@ -81,7 +83,6 @@ class FinalView extends Component {
       this.props.navigate('Playlist', {
         parentState: null
       });
-      //return <Text style={styles.title}>START A NEW SESSION</Text>
       return null
     }
   }

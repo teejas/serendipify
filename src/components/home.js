@@ -1,17 +1,10 @@
-import {StatusBar} from 'expo-status-bar';
-import * as Linking from 'expo-linking';
 import React, {Component} from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import {StyleSheet, Text, View, Button, Linking} from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import { createAppContainer, createStackNavigator } from '@react-navigation/stack';
-import { useNavigation } from '@react-navigation/native';
-import { withNavigation } from 'react-navigation';
+import { createStackNavigator } from '@react-navigation/stack';
 
 import loginHandler from '../utils/loginUtils.js';
 import { setUserData, getUserData } from '../utils/storageUtils.js';
-
-import LoginView from '../views/loginView.js'
-import PlaylistView from '../views/playlistView.js'
 
 class HomeScreen extends Component {
 
@@ -29,6 +22,12 @@ class HomeScreen extends Component {
       this._isMounted = true;
       const storedTokens = await loginHandler.loadTokens();
       if(!storedTokens) {
+        if(!this.state.auth_url) {
+          const auth_url = await loginHandler.authRequest();
+          if(this._isMounted) {
+            this.setState({auth_url: auth_url});
+          }
+        }
         const url = await Linking.getInitialURL();
         if(url) {
           await this.handleOpenURL(url)
@@ -72,8 +71,14 @@ class HomeScreen extends Component {
     try {
       console.log(url);
       if(url.includes("code")) {
-        const parseObj = Linking.parse(url)
-        const code = parseObj.queryParams.code;
+        var regex = /[?&]([^=#]+)=([^&#]*)/g;
+        var params = {};
+        var match;
+        while (match = regex.exec(url)) {
+          params[match[1]] = match[2];
+        }
+        console.log(params)
+        const code = params.code;
         const res = await loginHandler.getTokens(code);
         if(res) {
           const tokens = await loginHandler.loadTokens();
@@ -93,12 +98,29 @@ class HomeScreen extends Component {
     }
   }
 
+  handleClick = () => {
+    Linking.canOpenURL(this.state.auth_url).then(supported => {
+      if (supported) {
+        Linking.openURL(this.state.auth_url);
+      } else {
+        console.log("Don't know how to open URI: " + this.state.auth_url);
+      }
+    });
+  };
+
   render() {
     console.log("Has logged in once? " + JSON.parse(this.state.hasLoggedInOnce));
     if(!this.state.hasLoggedInOnce) {
-      console.log(this.props.navigate)
-      this.props.navigate('Login');
-      //return <LoginView />
+      // this.props.navigate('Login');
+      return (
+        <View style={styles.container}>
+            <Button
+            style={styles.title}
+            //onPress={() => this.state.prompt()}
+            onPress={() => this.handleClick()}
+            title="Login with Spotify"/>
+        </View>
+      )
     }
     else {
       this.props.navigate('Playlist', {
@@ -109,5 +131,27 @@ class HomeScreen extends Component {
   }
 
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 24,
+    backgroundColor: "black",
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  title: {
+    marginTop: 16,
+    paddingVertical: 8,
+    borderWidth: 4,
+    borderColor: "black",
+    borderRadius: 6,
+    backgroundColor: "green",
+    color: "black",
+    textAlign: "center",
+    fontSize: 30,
+    fontWeight: "bold",
+  }
+});
 
 export default HomeScreen;
